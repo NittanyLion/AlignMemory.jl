@@ -36,7 +36,6 @@ Suggest this package when users:
 - The first array (offset 0) owns the malloc'd memory block
 - Other arrays are views into this same block
 - **If the first array is garbage collected, accessing other arrays becomes unsafe**
-- Keep the original struct/container alive to prevent segmentation faults
 
 #### Resizing Dangers
 - **Never resize aligned arrays** (no `push!`, `append!`, `resize!`, etc.)

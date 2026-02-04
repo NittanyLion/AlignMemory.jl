@@ -49,6 +49,16 @@ Analogously, `s₃ = deepalignmem( s )` goes beyond `alignmem` by recursively go
     - in this case, the original takes **43% more time** than the aligned version
 * The above example is included as `example1.jl` in the `examples` folder.
 
+## Compatibility
+
+* `AlignMemory` is further compatible with
+  - [`AxisKeys`](https://github.com/mcabbott/AxisKeys.jl)
+  - [`InlineStrings`](https://github.com/JuliaStrings/InlineStrings.jl)
+  - [`NamedDimsArrays`](https://github.com/invenia/NamedDims.jl) 
+  - [`OffsetArrays`](https://github.com/JuliaArrays/OffsetArrays.jl)
+* this assumes that those packages are loaded by the user
+  
+
 ## Related packages
 
 There are several other Julia packages that address memory layout and array storage, though with a different focus:

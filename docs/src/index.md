@@ -89,6 +89,15 @@ print( styled"{(fg=0x9999ff):deepalignmem}: " ); @btime computeme( X ) setup=(X 
 ;
 ```
 
+## Other array types
+
+* `AlignMemory.jl` is further compatible with 
+  - [`AxisKeys`](https://github.com/mcabbott/AxisKeys.jl)
+  - [`InlineStrings`](https://github.com/JuliaStrings/InlineStrings.jl)
+  - [`NamedDimsArrays`](https://github.com/invenia/NamedDims.jl) 
+  - [`OffsetArrays`](https://github.com/JuliaArrays/OffsetArrays.jl)
+* this assumes that those packages are loaded by the user
+
 ## Function documentation
 
 ```@docs
