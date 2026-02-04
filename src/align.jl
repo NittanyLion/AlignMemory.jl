@@ -1,55 +1,3 @@
-function AlignMem( s :: AbstractDict )
-    D = copy( s )
-    AlignMem!( D, keys( D )... )
-    return D
-end
-
-computesize_deep( :: Any ) = 0
-computesize_deep( x :: AbstractArray ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : sum( computesize_deep, x )
-function computesize_deep( x :: T ) where T
-    isbitstype( T ) && return 0
-    isstructtype( T ) || return 0
-    return sum( computesize_deep( getfield( x, k ) ) for k ∈ fieldnames( T ) )
-end
-
-deep_transfer( x :: Any, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool} ) = x
-
-function deep_transfer( x :: AbstractArray{T}, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool} ) where T
-    if isbitstype( T )
-         sz = sizeof( T ) * length( x )
-         sz == 0 && return x
-         ▶now = ▶ + offset[]
-         should_own = !owned[]
-         flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = should_own )
-         if should_own
-             owned[] = true
-         end
-         dest = reshape( flat, size( x ) )
-         offset[] += sz
-         copyto!( dest, x )
-         return NewArrayOfSameType( x, dest )
-    else
-        return map( el -> deep_transfer( el, ▶, offset, owned ), x )
-    end
-end
-
-function deep_transfer( x :: T, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool} ) where T
-    isbitstype( T ) && return x
-    if isstructtype( T )
-        return T( ( deep_transfer( getfield( x, k ), ▶, offset, owned ) for k ∈ fieldnames( T ) )... )
-    end
-    return x
-end
-
-function DeepAlignMem( x )
-    sz = computesize_deep( x )
-    sz == 0 && return deepcopy( x )
-    ▶ = Base.Libc.malloc( sz )
-    offset = Ref( 0 )
-    owned = Ref( false )
-    return deep_transfer( x, ▶, offset, owned )
-end
-
 using DataStructures, StyledStrings
 # const Collection = Union{AbstractArray, AbstractDict, AbstractSet, Tuple}
 
@@ -136,7 +84,7 @@ function AlignMem!( D :: AbstractDict, X... )
     return nothing
 end
 
-@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):resizing arrays in structs with aligned memory} will {red:break memory contiguity}: it is {(fg=0x08FF08,bg=0x000000):not} otherwise {(fg=0x08FF08,bg=0x000000):unsafe} (examples are using {(fg=0xfff01f,bg=0x000000):push!} or {(fg=0xfff01f,bg=0x000000):append!})}" 
+@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):Resizing arrays in structs with aligned memory} will {red:break memory contiguity}: it {italic:can} also be {(fg=0x08FF08,bg=0x000000):unsafe};  (examples are using {(fg=0xfff01f,bg=0x000000):push!} or {(fg=0xfff01f,bg=0x000000):append!}).  Users should implement memory alignment manually in cases in which resizing is desirable.}" 
 
 
 function AlignMem( s :: AbstractArray{T} ) where T
@@ -161,6 +109,57 @@ function AlignMem( s :: T ) where T
     D = OrderedDict( k => getfield( s, k ) for k ∈ fn )
     AlignMem!( D, fn... )
     return T( ( D[k] for k ∈ fn )... )
+end
+
+
+function AlignMem( s :: AbstractDict )
+    D = copy( s )
+    AlignMem!( D, keys( D )... )
+    return D
+end
+
+computesize_deep( x :: AbstractArray ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : sum( computesize_deep, x )
+function computesize_deep( x :: T ) where T
+    isbitstype( T ) && return 0
+    isstructtype( T ) || return 0
+    return sum( computesize_deep( getfield( x, k ) ) for k ∈ fieldnames( T ) )
+end
+
+
+function deep_transfer( x :: AbstractArray{T}, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool} ) where T
+    if isbitstype( T )
+         sz = sizeof( T ) * length( x )
+         sz == 0 && return x
+         ▶now = ▶ + offset[]
+         should_own = !owned[]
+         flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = should_own )
+         if should_own
+             owned[] = true
+         end
+         dest = reshape( flat, size( x ) )
+         offset[] += sz
+         copyto!( dest, x )
+         return NewArrayOfSameType( x, dest )
+    else
+        return map( el -> deep_transfer( el, ▶, offset, owned ), x )
+    end
+end
+
+function deep_transfer( x :: T, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool} ) where T
+    isbitstype( T ) && return x
+    if isstructtype( T )
+        return T( ( deep_transfer( getfield( x, k ), ▶, offset, owned ) for k ∈ fieldnames( T ) )... )
+    end
+    return x
+end
+
+function DeepAlignMem( x )
+    sz = computesize_deep( x )
+    sz == 0 && return deepcopy( x )
+    ▶ = Base.Libc.malloc( sz )
+    offset = Ref( 0 )
+    owned = Ref( false )
+    return deep_transfer( x, ▶, offset, owned )
 end
 
 
