@@ -4,12 +4,12 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://NittanyLion.github.io/AlignMemory.jl/dev/)
 [![Build Status](https://github.com/NittanyLion/AlignMemory.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/NittanyLion/AlignMemory.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
-`AlignMemory.jl` addresses the issue that entries of collections (`Dicts`, `Arrays`, and `structs`) are not necessarily contiguous in memory.  It provides two functions:
+`AlignMemory.jl` addresses the issue that entries of collections (`Dicts`, `Arrays`, and `structs`) are not necessarily contiguous in memory.  The advantage of contiguity is that it reduces `cache misses` and should be expected to improve performance. 
+`AlignMemory.jl` provides two functions:
 1. `alignmem`
 2. `deepalignmem` 
 
-For instance, `s₂ = alignmem( s )` creates a copy of the contents of `s` in which the memory of the various elements of `s₂` are contiguous in memory. The advantage of this is that it reduces `cache misses` and should be expected to improve performance. 
-
+For instance, `s₂ = alignmem( s )` creates a copy of the contents of `s` in which the memory of the various elements of `s₂` are contiguous in memory. 
 Analogously, `s₃ = deepalignmem( s )` goes beyond `alignmem` by recursively going through `s`.  In other words, `deepalignmem` is to `alignmem` what `deepcopy` is to `copy`.
 
 **Please read the documentation carefully.**
