@@ -1,32 +1,39 @@
 using DataStructures, StyledStrings
-# const Collection = Union{AbstractArray, AbstractDict, AbstractSet, Tuple}
 
 export alignmem!, alignmem, deepalignmem
 
-# const SymbolInt = Union{ Symbol, Int }
 computesize( :: Any ) = 0
 computesize( x :: AbstractArray ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : 0
 
-
+const importantadmonition = """
+!!! warning "important implementation details"
+    Users should be mindful of the following important implementation details:
+    - the first array (with offset 0) takes ownership of the `malloc`'d memory (`own=true`)
+    - other arrays point to locations in the same block but do not *own* their location
+    - this arrangement is safe as long as the first array is kept alive
+    - if the first array is resized then bad things can happen if the remaining arrays are accessed
+    - if any of the remaining arrays are resized then that array is no longer contiguous with the remaining arrays, but it will otherwise perform as expected
+"""
 
 """
-    newarrayofsametype(old, newdata)
+    `newarrayofsametype(old, newdata)`
 
-Create a new array wrapper of the same type and structure as `old`, but wrapping `newdata`.
-This function recursively peels off array wrappers (like `KeyedArray`, `OffsetArray`, `NamedDimsArray`)
-to reach the underlying data, replaces it with `newdata`, and then re-wraps it.
+Function *for internal use only* that creates a new array wrapper of the same type and structure as `old`, but wrapping `newdata`.  This function recursively peels off array wrappers (like `KeyedArray`, `OffsetArray`, `NamedDimsArray`) to reach the underlying data, replaces it with `newdata`, and then re-wraps it. 
 
 # Supported Wrappers
-- `KeyedArray`: preserves axis keys.
-- `OffsetArray`: preserves offsets.
-- `NamedDimsArray`: preserves dimension names.
-- `Any`: fallback that returns `newdata` directly (bottom of recursion).
+- `KeyedArray`: preserves axis keys
+- `OffsetArray`: preserves offsets
+- `NamedDimsArray`: preserves dimension names
 """
 newarrayofsametype( ::Any, newdata ) = newdata
 
 
 
+"""
+    `transferadvance(  D, x, TT, ▶, offset )`
 
+The function `transferadvance` is *for internal use only*.  It assigns memory from the memory block and then advances the `offset`.
+"""
 transferadvance!( D :: AbstractDict, x, TT, ▶ :: Ptr, :: Ref{Int} ) = nothing
 
 
@@ -51,24 +58,21 @@ end
 
 
 """
-    alignmem!(D::AbstractDict, X...)
+    `alignmem!( D :: AbstractDict, X... )``
 
-Replaces the arrays stored in dictionary `D` at keys `X` with new arrays that are contiguous in memory.
+`alignmem!` is *for internal use only*.  It replaces the arrays stored in dictionary `D` at keys `X` with new arrays that are contiguous in memory.  
 
-This function:
-1. Calculates the total size needed for all arrays in `X`.
-2. Allocates a single block of memory using `Libc.malloc` to hold all the data.
-3. Recursively copies the data from the old arrays into this new contiguous block.
-4. Replaces `D[x]` with a new array wrapper (preserving type, keys, offsets, etc.) that points to the new memory.
+`alignmem!`
+1. calculates the total size needed for all arrays in `X`;
+2. allocates a single block of memory using `Libc.malloc` to hold all the data;
+3. recursively copies the data from the old arrays into this new contiguous block;
+4. replaces `D[x]` with a new array wrapper (preserving type, keys, offsets, etc.) that points to the new memory
 
-# Arguments
-- `D`: The dictionary containing the arrays.
-- `X...`: A list of symbols (keys in `D`) identifying which arrays to align.
+`alignmem!` takes two arguments:
+- `D`: The dictionary containing the arrays;
+- `X...`: a list of keys in `D` identifying which arrays to align
 
-# Notes
-- The first array (with offset 0) takes ownership of the `malloc`'d memory (`own=true`).
-- Other arrays point to the same block but do not own it.
-- This arrangement is safe as long as the first array is kept alive.
+$importantadmonition
 """
 function alignmem!( D :: AbstractDict, X... )
     needed = 0
@@ -90,15 +94,13 @@ end
 """
     alignmem(s; exclude = [])
 
-Align the memory of arrays within structure `s`.
+`alignmem` aligns the memory of arrays within the object `s`, whose type should be one of `struct`, `AbstractArray`, or `AbstractDict`
 
-This function creates a new instance of `s` (or copy of `s`) where the arrays are stored contiguously in memory.
-It handles `AbstractArray`, `AbstractDict`, and struct types.
+`alignmem` creates a new instance of `s` (or copy of `s`) where the arrays are stored contiguously in memory.
 
-# Arguments
-- `s`: The object to align (Array, Dict, or Struct).
-- `exclude`: A list of keys (for Dicts/Arrays) or field names (for Structs) to exclude from alignment.
-           Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.
+Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.
+
+$importantadmonition
 """
 function alignmem( s :: AbstractArray{T}; exclude = [] ) where T
     isbitstype( T ) && return s
@@ -144,18 +146,18 @@ end
 
 function deeptransfer( x :: AbstractArray{T}, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool}; exclude = Symbol[] ) where T
     if isbitstype( T )
-         sz = sizeof( T ) * length( x )
-         sz == 0 && return x
-         ▶now = ▶ + offset[]
-         shouldown = !owned[]
-         flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = shouldown )
-         if shouldown
-             owned[] = true
-         end
-         dest = reshape( flat, size( x ) )
-         offset[] += sz
-         copyto!( dest, x )
-         return newarrayofsametype( x, dest )
+        sz = sizeof( T ) * length( x )
+        sz == 0 && return x
+        ▶now = ▶ + offset[]
+        shouldown = !owned[]
+        flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = shouldown )
+        if shouldown
+            owned[] = true
+        end
+        dest = reshape( flat, size( x ) )
+        offset[] += sz
+        copyto!( dest, x )
+        return newarrayofsametype( x, dest )
     else
         return map( el -> deeptransfer( el, ▶, offset, owned ), x )
     end
@@ -170,17 +172,15 @@ function deeptransfer( x :: T, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool
 end
 
 """
-    deepalignmem(x; exclude = [])
+    `deepalignmem( x; exclude = [] )` 
 
-Recursively align memory of arrays within `x` and its fields.
+`deepalignmem` recursively aligns memory of arrays within `x` and its fields
 
-Unlike `alignmem`, which only aligns the immediate fields/elements of `x`, `deepalignmem` traverses
-the structure recursively.
+Unlike `alignmem`, which only aligns the immediate fields/elements of `x`, `deepalignmem` traverses the structure recursively.  In other words, `deepalignmem` is to `alignmem` what `deepcopy` is to `copy`.
 
-# Arguments
-- `x`: The object to recursively align.
-- `exclude`: A list of field names to exclude from recursion and alignment.
-           Excluded fields are `deepcopy`'d instead of being processed.
+Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.
+
+$importantadmonition
 """
 function deepalignmem( x; exclude = Symbol[] )
     sz = computesizedeep( x; exclude = exclude )
