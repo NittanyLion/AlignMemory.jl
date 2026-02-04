@@ -1,9 +1,28 @@
 name = "AlignMemory"
 uuid = "109d70c3-7bcd-434b-a7d9-3642108a1280"
-authors = ["Joris Pinkse <pinkse@gmail.com> and contributors"]
 version = "1.0.0-DEV"
+authors = ["Joris Pinkse <pinkse@gmail.com> and contributors"]
+
+[deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
+
+[weakdeps]
+AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
+NamedDims = "356022a1-0364-5f58-8944-0da4b18d706f"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+
+[extensions]
+AlignMemoryAxisKeysExt = "AxisKeys"
+AlignMemoryNamedDimsExt = "NamedDims"
+AlignMemoryOffsetArraysExt = "OffsetArrays"
 
 [compat]
+AxisKeys = "0.2"
+DataStructures = "0.19.3"
+NamedDims = "1.2"
+OffsetArrays = "1.17"
+StyledStrings = "1.11.0"
 julia = "1.12"
 
 [extras]

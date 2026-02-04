@@ -1,5 +1,5 @@
 module AlignMemory
 
-# Write your package code here.
+include( "align.jl" )
 
 end
