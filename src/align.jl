@@ -1,6 +1,7 @@
 using DataStructures, StyledStrings
 
-export alignmem!, alignmem, deepalignmem
+export alignmem, deepalignmem
+public alignmem!
 
 computesize( :: Any ) = 0
 computesize( x :: AbstractArray ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : 0
@@ -88,7 +89,7 @@ function alignmem!( D :: AbstractDict, X... )
     return nothing
 end
 
-@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):Resizing arrays in structs with aligned memory} will {red:break memory contiguity}: it {italic:can} also be {(fg=0x08FF08,bg=0x000000):unsafe};  (examples are using {(fg=0xfff01f,bg=0x000000):push!} or {(fg=0xfff01f,bg=0x000000):append!}).  Users should implement memory alignment manually in cases in which resizing is desirable.}" 
+@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):Resizing arrays in structs with aligned memory} will {red:break memory contiguity}: it {italic:can} also be {(fg=0x08FF08,bg=0x000000):unsafe};  (examples are using {(fg=0xfff01f,bg=0x000000):push!} or {(fg=0xfff01f,bg=0x000000):append!}).  Users should use the {magenta:exclude} option for arrays for which resizing is desirable.}" 
 
 
 """
@@ -172,7 +173,7 @@ function deeptransfer( x :: T, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool
 end
 
 """
-    `deepalignmem( x; exclude = [] )` 
+    deepalignmem( x; exclude = [] ) 
 
 `deepalignmem` recursively aligns memory of arrays within `x` and its fields
 

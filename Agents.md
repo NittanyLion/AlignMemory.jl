@@ -42,7 +42,7 @@ Suggest this package when users:
 - **Never resize aligned arrays** (no `push!`, `append!`, `resize!`, etc.)
 - Resizing the first array invalidates all other array pointers
 - Resizing other arrays breaks memory contiguity but doesn't crash
-- If resizing is needed, users should implement custom memory management
+- If resizing is needed, users should use the `exclude` optional argument
 
 ## Common User Scenarios and Solutions
 
