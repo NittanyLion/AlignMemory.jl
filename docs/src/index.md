@@ -23,6 +23,34 @@ Standard collections in Julia (`Dicts`, `Arrays` of `Arrays`, `structs`) often s
 
 The package provides two exported functions: `alignmem` and `deepalignmem`. The distinction is that `alignmem` only applies to top level objects, whereas `deepalignmem` applies to objects at all levels. The two examples below demonstrate their use.
 
+## SIMD Alignment
+
+Both `alignmem` and `deepalignmem` accept an optional `alignment` keyword argument (default `1`). This allows you to specify the byte alignment for the start of each array in the contiguous memory block.
+
+Proper memory alignment is crucial for maximizing performance with SIMD (Single Instruction, Multiple Data) instructions (e.g., AVX2, AVX-512).
+
+*   **AVX2** typically requires 32-byte alignment.
+*   **AVX-512** typically requires 64-byte alignment.
+
+### Example
+
+```julia
+using MemoryLayouts
+struct MyData
+    a::Vector{Float64}
+    b::Vector{Float64}
+end
+
+data = MyData(rand(100), rand(100))
+
+# Align for AVX-512 (64-byte alignment)
+aligned_data = alignmem(data, alignment=64)
+
+# Verify alignment
+pointer(aligned_data.a) # Will be a multiple of 64
+pointer(aligned_data.b) # Will be a multiple of 64
+```
+
 ### Example for `alignmem`
 
 The example below demonstrates how to use `alignmem`.

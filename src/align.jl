@@ -72,6 +72,8 @@ end
 
 `alignmem` creates a new instance of `s` (or copy of `s`) where the arrays are stored contiguously in memory.
 
+The `alignment` keyword argument specifies the memory alignment in bytes. This is particularly useful for SIMD operations, where aligning data to 16, 32, or 64 bytes can improve performance.
+
 Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.
 
 $importantadmonition
@@ -157,6 +159,8 @@ deeptransfer( x :: T, ■ :: Vector{UInt8}, offset :: Ref{Int}; exclude = Symbol
 `deepalignmem` recursively aligns memory of arrays within `x` and its fields
 
 Unlike `alignmem`, which only aligns the immediate fields/elements of `x`, `deepalignmem` traverses the structure recursively.  In other words, `deepalignmem` is to `alignmem` what `deepcopy` is to `copy`.
+
+The `alignment` keyword argument specifies the memory alignment in bytes. This is particularly useful for SIMD operations, where aligning data to 16, 32, or 64 bytes can improve performance.
 
 Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.
 
