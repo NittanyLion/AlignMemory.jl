@@ -1,12 +1,12 @@
 <div align="center">
 
-# AlignMemory.jl 🧠⚡
+# MemoryLayouts.jl 🧠⚡
 
 **Optimize your memory layout for maximum cache efficiency.**
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://NittanyLion.github.io/AlignMemory.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://NittanyLion.github.io/AlignMemory.jl/dev/)
-[![Build Status](https://github.com/NittanyLion/AlignMemory.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/NittanyLion/AlignMemory.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://NittanyLion.github.io/MemoryLayouts.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://NittanyLion.github.io/MemoryLayouts.jl/dev/)
+[![Build Status](https://github.com/NittanyLion/MemoryLayouts.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/NittanyLion/MemoryLayouts.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 ## 🚀 The Problem vs. The Solution
 
-Standard collections in Julia (`Dict`s, `Array`s of `Array`s, `struct`s) often scatter data across memory, causing frequent **cache misses**. `AlignMemory.jl` packs this data into contiguous blocks.
+Standard collections in Julia (`Dict`s, `Array`s of `Array`s, `struct`s) often scatter data across memory, causing frequent **cache misses**. `MemoryLayouts.jl` packs this data into contiguous blocks.
 
 The advantage of contiguity is that it reduces cache misses and should be expected to improve performance.
 
@@ -39,7 +39,7 @@ In scientific computing, memory locality is everything.
 <summary><b>Click to see the benchmark code</b></summary>
 
 ```julia
-using AlignMemory, BenchmarkTools, StyledStrings
+using MemoryLayouts, BenchmarkTools, StyledStrings
 
 function original( A = 10_000, L = 100, S = 5000)
     x = Vector{Vector{Float64}}(undef, A)
@@ -68,18 +68,18 @@ print( styled"{green:alignmem}: " ); @btime computeme( X ) setup=(X = alignmem( 
 
 ---
 
-## ⚠️ Critical Usage Note
+## ⚠️ Usage Note
 
 > [!IMPORTANT]
 > **Memory Contiguity**
 > 1. Aligned arrays share a single contiguous memory block.
-> 2. **Resizing** aligned arrays (`push!`, `append!`) will cause them to be reallocated elsewhere, breaking memory contiguity.
+> 2. **Resizing** aligned arrays (`push!`, `append!`) will cause them to be reallocated elsewhere, meaning that such arrays will no longer be contiguous with the rest of the memory block.
 
 ---
 
 ## 🔌 Compatibility & Extensions
 
-`AlignMemory` is further compatible with:
+`MemoryLayouts` is further compatible with:
 * 🔑 [`AxisKeys`](https://github.com/mcabbott/AxisKeys.jl)
 * 📝 [`InlineStrings`](https://github.com/JuliaStrings/InlineStrings.jl)
 * 🏷️ [`NamedDimsArrays`](https://github.com/invenia/NamedDims.jl) 
@@ -99,4 +99,4 @@ There are several other Julia packages that address memory layout and array stor
 *   [UnsafeArrays.jl](https://github.com/JuliaArrays/UnsafeArrays.jl): Provides stack-allocated pointer-based array views.
 *   [Buffers.jl](https://github.com/fkfest/Buffers.jl): Manages buffer allocation/deallocation for multidimensional arrays.
 
-**AlignMemory.jl** differs by focusing specifically on physically aligning multiple independent arrays (which may be fields in a struct) into a single contiguous memory block to optimize cache usage, while using `unsafe_wrap` to present them as standard Julia arrays.
+**MemoryLayouts.jl** differs by focusing specifically on physically aligning multiple independent arrays (which may be fields in a struct) into a single contiguous memory block to optimize cache usage, while using `unsafe_wrap` to present them as standard Julia arrays.

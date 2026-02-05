@@ -1,4 +1,4 @@
-using AlignMemory
+using MemoryLayouts
 using Test
 
 struct S
@@ -6,7 +6,7 @@ struct S
     b::Vector{Float64}
 end
 
-@testset "AlignMemory.jl" begin
+@testset "MemoryLayouts.jl" begin
     @testset "alignmem struct" begin
         s = S(rand(10), rand(20))
         s_aligned = alignmem(s)
@@ -60,5 +60,25 @@ end
         # Assuming field order traversal
         @test UInt(p_xb) == UInt(p_xa) + sizeof(ds_aligned.x.a)
         @test UInt(p_y) == UInt(p_xb) + sizeof(ds_aligned.x.b)
+    end
+
+    @testset "alignment option" begin
+        s = S(rand(10), rand(20)) # 80 bytes and 160 bytes. Both multiples of 8.
+        # Let's align to 64 bytes.
+        # 80 is not multiple of 64 (64 + 16).
+        # So padding of 48 bytes needed? (80 + 48 = 128 = 2*64).
+        
+        s_aligned = alignmem(s, alignment=64)
+        
+        pa = pointer(s_aligned.a)
+        pb = pointer(s_aligned.b)
+        
+        @test mod(UInt(pa), 64) == 0
+        @test mod(UInt(pb), 64) == 0
+        
+        # Check padding
+        diff = UInt(pb) - UInt(pa)
+        @test diff >= sizeof(s_aligned.a)
+        @test mod(diff, 64) == 0
     end
 end

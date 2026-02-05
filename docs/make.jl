@@ -3,18 +3,18 @@ Pkg.activate(@__DIR__)
 Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..")))
 Pkg.instantiate()
 
-using AlignMemory
+using MemoryLayouts
 using Documenter
 
-DocMeta.setdocmeta!(AlignMemory, :DocTestSetup, :(using AlignMemory); recursive=true)
+DocMeta.setdocmeta!(MemoryLayouts, :DocTestSetup, :(using MemoryLayouts); recursive=true)
 
 makedocs(;
-    modules=[AlignMemory],
+    modules=[MemoryLayouts],
     authors="Joris Pinkse <pinkse@gmail.com> and contributors",
-    sitename="AlignMemory.jl",
+    sitename="MemoryLayouts.jl",
     warnonly=true,
     format=Documenter.HTML(;
-        canonical="https://NittanyLion.github.io/AlignMemory.jl",
+        canonical="https://NittanyLion.github.io/MemoryLayouts.jl",
         edit_link="main",
         assets=["assets/custom.css"],
     ),
@@ -24,6 +24,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/NittanyLion/AlignMemory.jl",
+    repo="github.com/NittanyLion/MemoryLayouts.jl",
     devbranch="main",
 )

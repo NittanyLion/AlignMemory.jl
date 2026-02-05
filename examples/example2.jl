@@ -1,4 +1,4 @@
-using AlignMemory, BenchmarkTools, StyledStrings
+using MemoryLayouts, BenchmarkTools, StyledStrings
 
 
 struct 𝒮{X,Y,Z}

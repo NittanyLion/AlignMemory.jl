@@ -1,11 +1,11 @@
-# AI Agent Guide for AlignMemory.jl
+# AI Agent Guide for MemoryLayouts.jl
 
 ## Purpose
-This document provides guidance for AI agents assisting users with the AlignMemory.jl package. It contains essential information about the package's functionality, common use cases, potential pitfalls, and best practices.
+This document provides guidance for AI agents assisting users with the MemoryLayouts.jl package. It contains essential information about the package's functionality, common use cases, potential pitfalls, and best practices.
 
 ## Package Overview
 
-AlignMemory.jl is a Julia package that optimizes memory layout by ensuring that elements of collections (Arrays, Dicts, structs) are stored contiguously in memory. This reduces cache misses and improves performance, particularly for data structures with multiple array fields.
+MemoryLayouts.jl is a Julia package that optimizes memory layout by ensuring that elements of collections (Arrays, Dicts, structs) are stored contiguously in memory. This reduces cache misses and improves performance, particularly for data structures with multiple array fields.
 
 ### Core Functions
 - **`alignmem(x; exclude=[])`**: Aligns memory for immediate fields/elements of `x`
@@ -21,7 +21,7 @@ When helping users, emphasize that memory alignment:
 - Is particularly beneficial for frequently accessed data structures
 - Works best with arrays of bits types (numbers, booleans, etc.)
 
-### 2. When to Recommend AlignMemory.jl
+### 2. When to Recommend MemoryLayouts.jl
 Suggest this package when users:
 - Work with structs containing multiple array fields
 - Experience performance bottlenecks due to cache misses
@@ -123,7 +123,7 @@ deep = deepalignmem(data)
 
 ## Integration with Other Packages
 
-AlignMemory.jl has extensions for:
+MemoryLayouts.jl has extensions for:
 - **AxisKeys.jl**: Preserves axis keys through `newarrayofsametype`
 - **OffsetArrays.jl**: Maintains array offsets after alignment
 - **NamedDims.jl**: Keeps dimension names intact
@@ -147,7 +147,7 @@ When users combine these packages, ensure alignment preserves wrapper properties
 
 ## Code Generation Guidance
 
-When generating code using AlignMemory.jl:
+When generating code using MemoryLayouts.jl:
 
 ### Safe Pattern:
 ```julia
@@ -201,9 +201,9 @@ Alternative: Create new aligned structure after modifications
 - Extensions loaded conditionally based on package availability
 
 ## Additional Resources
-- GitHub: https://github.com/NittanyLion/AlignMemory.jl
+- GitHub: https://github.com/NittanyLion/MemoryLayouts.jl
 - Documentation: See docs/src/index.md for user documentation
 - Tests: test/runtests.jl provides usage examples
 
 ## Final Notes for AI Agents
-Remember that AlignMemory.jl is a specialized performance optimization tool. It's not always the right solution, and its benefits depend heavily on the specific use case. Always encourage users to profile and benchmark their specific scenarios before and after applying memory alignment.
+Remember that MemoryLayouts.jl is a specialized performance optimization tool. It's not always the right solution, and its benefits depend heavily on the specific use case. Always encourage users to profile and benchmark their specific scenarios before and after applying memory alignment.

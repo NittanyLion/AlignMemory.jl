@@ -1,4 +1,4 @@
-using AlignMemory, BenchmarkTools, StyledStrings
+using MemoryLayouts, BenchmarkTools, StyledStrings
 
 function original( A = 10_000, L = 100, S = 5000)
     x = Vector{Vector{Float64}}(undef, A)

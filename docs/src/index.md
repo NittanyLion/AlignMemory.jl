@@ -1,16 +1,16 @@
 ```@meta
-CurrentModule = AlignMemory
+CurrentModule = MemoryLayouts
 ```
 
-# AlignMemory.jl 🧠⚡
+# MemoryLayouts.jl 🧠⚡
 
 **Optimize your memory layout for maximum cache efficiency.**
 
-Documentation for [AlignMemory](https://github.com/NittanyLion/AlignMemory.jl).
+Documentation for [MemoryLayouts](https://github.com/NittanyLion/MemoryLayouts.jl).
 
 ## 🚀 The Problem vs. The Solution
 
-Standard collections in Julia (`Dict`s, `Array`s of `Array`s, `struct`s) often scatter data across memory, causing frequent **cache misses**. `AlignMemory.jl` packs this data into contiguous blocks.
+Standard collections in Julia (`Dicts`, `Arrays` of `Arrays`, `structs`) often scatter data across memory, causing frequent **cache misses**. `MemoryLayouts.jl` packs this data into contiguous blocks.
 
 ### 🔮 How it works
 
@@ -28,7 +28,7 @@ The package provides two exported functions: `alignmem` and `deepalignmem`. The 
 The example below demonstrates how to use `alignmem`.
 
 ```@example
-using AlignMemory, BenchmarkTools, StyledStrings
+using MemoryLayouts, BenchmarkTools, StyledStrings
 
 function original( A = 10_000, L = 100, S = 5000)
     x = Vector{Vector{Float64}}(undef, A)
@@ -58,7 +58,7 @@ print( styled"{(fg=0x99ff99):alignmem}: " ); @btime computeme( X ) setup=(X = al
 The example below illustrates the use of `deepalignmem`.
 
 ```@example
-using AlignMemory, BenchmarkTools, StyledStrings
+using MemoryLayouts, BenchmarkTools, StyledStrings
 
 
 struct 𝒮{X,Y,Z}
@@ -100,7 +100,7 @@ print( styled"{(fg=0x9999ff):deepalignmem}: " ); @btime computeme( X ) setup=(X 
 
 ## 🔌 Compatibility & Extensions
 
-* `AlignMemory.jl` is further compatible with 
+* `MemoryLayouts.jl` is further compatible with 
   - [`AxisKeys`](https://github.com/mcabbott/AxisKeys.jl)
   - [`InlineStrings`](https://github.com/JuliaStrings/InlineStrings.jl)
   - [`NamedDimsArrays`](https://github.com/invenia/NamedDims.jl) 

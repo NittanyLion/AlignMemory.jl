@@ -60,6 +60,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using AlignMemory
-          DocMeta.setdocmeta!(AlignMemory, :DocTestSetup, :(using AlignMemory); recursive=true)
-          doctest(AlignMemory)
+          using MemoryLayouts
+          DocMeta.setdocmeta!(MemoryLayouts, :DocTestSetup, :(using MemoryLayouts); recursive=true)
+          doctest(MemoryLayouts)

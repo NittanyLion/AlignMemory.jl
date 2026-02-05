@@ -1,4 +1,4 @@
-module AlignMemory
+module MemoryLayouts
 using DataStructures, StyledStrings
 using ConstructionBase
 
