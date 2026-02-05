@@ -2,6 +2,7 @@
 
 computesize( :: Any ) = 0
 computesize( x :: AbstractArray ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : 0
+computesize( D :: AbstractDict, x ) = haskey( D, x ) ? computesize( D[x] ) : error( styled"dict {green:$D} lacks key {red:$x}" )
 
 const importantadmonition = """
 !!! warning "important implementation details"
@@ -12,6 +13,20 @@ const importantadmonition = """
     - if the first array is resized then bad things can happen if the remaining arrays are accessed
     - if any of the remaining arrays are resized then that array is no longer contiguous with the remaining arrays, but it will otherwise perform as expected
 """
+
+
+mutable struct MemoryBlock
+    ptr::Ptr{Cvoid}
+    function MemoryBlock(sz::Integer)
+        ptr = Base.Libc.malloc( sz )
+        ptr == C_NULL && error( styled"{red:memory allocation failed}" )
+        obj = new( ptr )
+        finalizer( o -> Base.Libc.free( o.ptr ), obj )
+        return obj
+    end
+end
+
+
 
 """
     newarrayofsametype(old, newdata)
@@ -42,7 +57,7 @@ function transferadvance!( D :: AbstractDict, x, TT :: Type{𝒯}, ▶ :: Ptr, o
     length( D[x] ) == 0 && return nothing           # don't try to align arrays of length zero
     ▶now = ▶ + offset[]                             # set the relevant place in memory
     # now grab the memory block that I want, assert ownership if it's the first block, and then give it the correct shape
-    dest = reshape( unsafe_wrap( Array, Ptr{𝒯}( ▶now ), length( D[x] ); own = offset[] == 0 ), size( D[x] ) )  
+    dest = reshape( unsafe_wrap( Array, Ptr{𝒯}( ▶now ), length( D[x] ); own = false ), size( D[x] ) )  
     offset[] += length( D[x] ) * sizeof( 𝒯 )        # move the offset counter
     copyto!( dest, D[x] )                           # move the data
     D[x] = newarrayofsametype( D[x], dest )         # change the dict entry
@@ -51,7 +66,7 @@ end
 
 
 function transferadvance!( D :: AbstractDict, x, ▶ :: Ptr, offset :: Ref{Int} )
-    @assert haskey( D, x )
+    haskey( D, x ) || error( styled"dict {green:$D} lacks key {red:$x}" )
     D[x] isa AbstractArray || return nothing
     return transferadvance!( D, x, eltype( D[x] ), ▶, offset )
 end
@@ -75,20 +90,9 @@ end
 $importantadmonition
 """
 function alignmem!( D :: AbstractDict, X )
-    needed = 0                                              # set amount of memory needed to zero
-    for x ∈ X                       
-        @assert haskey( D, x )
-        needed += computesize( D[x] )                       # update the amount of memory
-    end
-    ▶ = Base.Libc.malloc( needed )                          # allocate that memory
-    ▶ == C_NULL && error( "Memory allocation failed" )      # check if I got what I asked for
-    offset = Ref(0)                                         # initialize the offset ref
-    try
-        foreach( x -> transferadvance!( D, x, ▶, offset ), X ) # assign memory and move the offset ref
-    catch e
-        offset[] == 0 && Base.Libc.free( ▶ )                # free if offset never moved
-        rethrow( e )
-    end
+    block = MemoryBlock( sum( computesize( D, x ) for x ∈ X) )
+    offset = Ref(0)
+    foreach(x -> transferadvance!(D, x, block, offset), X)
     return nothing
 end
 
@@ -120,7 +124,7 @@ end
 function alignmem( s :: T; exclude = Symbol[] ) where T
     isbitstype( T ) && return s 
     if !isstructtype( T ) 
-        @warn styled"can only do {red:structs}, {red:array types}, and {red:dicts} at this point" maxlog = 1
+        @warn styled"can only do {green:structs}, {green:array types}, and {green:dicts} at this point; {red:$T} is none of the above" 
         return s 
     end
     fn = fieldnames( T )
