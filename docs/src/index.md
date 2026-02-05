@@ -16,8 +16,8 @@ Standard collections in Julia (`Dicts`, `Arrays` of `Arrays`, `structs`) often s
 
 | Function | Description | Analogy |
 | :--- | :--- | :--- |
-| **`alignmem(x)`** | Aligns immediate fields of `x` | Like `copy(x)` but packed |
-| **`deepalignmem(x)`** | Recursively aligns nested structures | Like `deepcopy(x)` but packed |
+| **`alignmem( x )`** | Aligns immediate fields of `x` | Like `copy( x )` but packed |
+| **`deepalignmem( x )`** | Recursively aligns nested structures | Like `deepcopy( x )` but packed |
 
 ## Usage
 
@@ -41,14 +41,14 @@ struct MyData
     b::Vector{Float64}
 end
 
-data = MyData(rand(100), rand(100))
+data = MyData( rand( 100 ), rand( 100 ) )
 
 # Align for AVX-512 (64-byte alignment)
-aligned_data = alignmem(data, alignment=64)
+aligneddata = alignmem( data; alignment = 64 )
 
 # Verify alignment
-pointer(aligned_data.a) # Will be a multiple of 64
-pointer(aligned_data.b) # Will be a multiple of 64
+pointer( aligneddata.a ) # Will be a multiple of 64
+pointer( aligneddata.b ) # Will be a multiple of 64
 ```
 
 ### Example for `alignmem`
@@ -59,8 +59,8 @@ The example below demonstrates how to use `alignmem`.
 using MemoryLayouts, BenchmarkTools, StyledStrings
 
 function original( A = 10_000, L = 100, S = 5000)
-    x = Vector{Vector{Float64}}(undef, A)
-    s = Vector{Vector{Float64}}(undef, A)
+    x = Vector{Vector{Float64}}( undef, A )
+    s = Vector{Vector{Float64}}( undef, A )
     for i ∈ 1:A
         x[i] = rand( L )
         s[i] = rand( S )
@@ -97,13 +97,13 @@ end
 
 
 function original( A = 10_000, L = 100, S = 5000)
-    x = Vector{Vector{Float64}}(undef, A)
-    s = Vector{Vector{Float64}}(undef, A)
+    x = Vector{Vector{Float64}}( undef, A )
+    s = Vector{Vector{Float64}}( undef, A )
     for i ∈ 1:A
         x[i] = rand( L )
         s[i] = rand( S )
     end
-    return 𝒮( [x[i] for i ∈ 1:div(A,3)], [ x[i] for i ∈ div(A,3)+1:div(2*A,3)], [x[i] for i ∈ div(2*A,3)+1:A ] )
+    return 𝒮( [x[i] for i ∈ 1:div( A, 3 )], [ x[i] for i ∈ div( A, 3 )+1:div( 2*A, 3 )], [x[i] for i ∈ div( 2*A, 3 )+1:A ] )
 end
 
 function computeme( X )

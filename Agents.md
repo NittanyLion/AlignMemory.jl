@@ -8,9 +8,9 @@ This document provides guidance for AI agents assisting users with the MemoryLay
 MemoryLayouts.jl is a Julia package that optimizes memory layout by ensuring that elements of collections (Arrays, Dicts, structs) are stored contiguously in memory. This reduces cache misses and improves performance, particularly for data structures with multiple array fields.
 
 ### Core Functions
-- **`alignmem(x; exclude=[], alignment=1)`**: Aligns memory for immediate fields/elements of `x`. `alignment` specifies byte alignment (e.g., 64 for AVX-512).
-- **`deepalignmem(x; exclude=[], alignment=1)`**: Recursively aligns memory throughout the entire structure.
-- **`alignmem!(D, keys...)`**: Internal function that performs in-place memory alignment for dictionary entries
+- **`alignmem( x; exclude = [], alignment = 1 )`**: Aligns memory for immediate fields/elements of `x`. `alignment` specifies byte alignment (e.g., 64 for AVX-512).
+- **`deepalignmem( x; exclude = [], alignment = 1 )`**: Recursively aligns memory throughout the entire structure.
+- **`alignmem!( D, keys... )`**: Internal function that performs in-place memory alignment for dictionary entries
 
 ## Key Concepts for AI Agents
 
@@ -55,8 +55,8 @@ struct SimData
 end
 
 # Solution
-data = SimData(rand(1000), rand(1000), rand(1000))
-aligned_data = alignmem(data)  # Now arrays are contiguous
+data = SimData( rand( 1000 ), rand( 1000 ), rand( 1000 ) )
+aligneddata = alignmem( data )  # Now arrays are contiguous
 ```
 
 ### Scenario 2: Excluding Fields
@@ -70,7 +70,7 @@ end
 
 # Solution
 data = MixedData(...)
-aligned = alignmem(data; exclude=[:metadata])
+aligned = alignmem( data; exclude = [:metadata] )
 ```
 
 ### Scenario 3: Deep vs Shallow Alignment
@@ -81,10 +81,10 @@ struct NestedData
 end
 
 # Shallow alignment (only top level)
-shallow = alignmem(data)
+shallow = alignmem( data )
 
 # Deep alignment (all levels)
-deep = deepalignmem(data)
+deep = deepalignmem( data )
 ```
 
 ## Error Diagnosis Guide
@@ -151,18 +151,18 @@ When generating code using MemoryLayouts.jl:
 
 ### Safe Pattern:
 ```julia
-function process_aligned_data(original_data)
-    aligned = alignmem(original_data)
+function processaligneddata( originaldata )
+    aligned = alignmem( originaldata )
     # Keep aligned alive for entire computation
-    result = compute_with_aligned(aligned)
+    result = computewithaligned( aligned )
     return result
 end
 ```
 
 ### Unsafe Pattern (AVOID):
 ```julia
-function unsafe_example(data)
-    aligned = alignmem(data)
+function unsafeexample( data )
+    aligned = alignmem( data )
     arr1 = aligned.array1  # Extracting reference
     arr2 = aligned.array2
     aligned = nothing      # DON'T DO THIS!
@@ -173,8 +173,8 @@ end
 ## Debugging Assistance
 
 Help users debug by checking:
-1. **Data types**: Use `isbitstype(eltype(array))` to verify optimization applies
-2. **Memory layout**: Use `pointer(array)` to verify contiguity
+1. **Data types**: Use `isbitstype( eltype( array ) )` to verify optimization applies
+2. **Memory layout**: Use `pointer( array )` to verify contiguity
 3. **Ownership**: First array should have `own=true` in unsafe_wrap
 4. **Size calculations**: Use `computesize` and `computesizedeep` for verification
 

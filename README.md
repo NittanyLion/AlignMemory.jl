@@ -22,8 +22,8 @@ The advantage of contiguity is that it reduces cache misses and should be expect
 
 | Function | Description | Analogy |
 | :--- | :--- | :--- |
-| **`alignmem(x)`** | Aligns immediate fields of `x` | Like `copy(x)` but packed |
-| **`deepalignmem(x)`** | Recursively aligns nested structures | Like `deepcopy(x)` but packed |
+| **`alignmem( x )`** | Aligns immediate fields of `x` | Like `copy( x )` but packed |
+| **`deepalignmem( x )`** | Recursively aligns nested structures | Like `deepcopy( x )` but packed |
 
 ### 🚀 SIMD Optimization
 
@@ -32,7 +32,7 @@ This allows aligning data to specific byte boundaries (e.g., 32 or 64 bytes), wh
 
 ```julia
 # Align for AVX-512 (64-byte alignment)
-aligned_data = alignmem(data, alignment=64)
+aligneddata = alignmem( data; alignment = 64 )
 ```
 
 ---
@@ -52,8 +52,8 @@ In scientific computing, memory locality is everything.
 using MemoryLayouts, BenchmarkTools, StyledStrings
 
 function original( A = 10_000, L = 100, S = 5000)
-    x = Vector{Vector{Float64}}(undef, A)
-    s = Vector{Vector{Float64}}(undef, A)
+    x = Vector{Vector{Float64}}( undef, A )
+    s = Vector{Vector{Float64}}( undef, A )
     for i ∈ 1:A
         x[i] = rand( L )
         s[i] = rand( S )
