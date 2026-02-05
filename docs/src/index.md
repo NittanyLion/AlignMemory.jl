@@ -118,11 +118,10 @@ deepalignmem
 
 ## ⚠️ Critical Usage Note
 
-!!! warning "Memory Ownership & Safety"
-    1. The first array in the aligned structure owns the memory.
-    2. **DO NOT RESIZE** aligned arrays (`push!`, `append!`) or the memory map will break.
-    3. If the parent structure is garbage collected, the pointers may become invalid. Keep it alive!
-    4. Any arrays that you may wish to reassign or resize at a later point in time should be specified in the optional `exclude` argument.
+!!! warning "Memory Contiguity"
+    1. Aligned arrays share a single contiguous memory block.
+    2. **Resizing** aligned arrays (`push!`, `append!`) will cause them to be reallocated elsewhere, breaking memory contiguity.
+    3. Any arrays that you may wish to reassign or resize at a later point in time should be specified in the optional `exclude` argument.
     
-    *Implementation Note:* The code allocates a single chunk of memory via `malloc`. This memory will be owned by the *first array* of the ones that are to be aligned. When that array is garbage-collected, the remaining aligned arrays will no longer be accessible.
+    *Implementation Note:* The code allocates a single chunk of memory (`Vector{UInt8}`) to hold all the data. This memory is kept alive by the aligned arrays.
 

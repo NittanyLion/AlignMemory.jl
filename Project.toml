@@ -4,6 +4,7 @@ version = "1.0.0-DEV"
 authors = ["Joris Pinkse <pinkse@gmail.com> and contributors"]
 
 [deps]
+ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 InlineStrings = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
 StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
@@ -21,6 +22,7 @@ AlignMemoryOffsetArraysExt = "OffsetArrays"
 
 [compat]
 AxisKeys = "0.2"
+ConstructionBase = "1.6.0"
 DataStructures = "0.19.3"
 InlineStrings = "1.4.5"
 NamedDims = "1.2"

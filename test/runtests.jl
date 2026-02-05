@@ -1,6 +1,64 @@
 using AlignMemory
 using Test
 
+struct S
+    a::Vector{Float64}
+    b::Vector{Float64}
+end
+
 @testset "AlignMemory.jl" begin
-    # Write your tests here.
+    @testset "alignmem struct" begin
+        s = S(rand(10), rand(20))
+        s_aligned = alignmem(s)
+
+        @test s_aligned.a == s.a
+        @test s_aligned.b == s.b
+        
+        # Check contiguity
+        # pointer(b) should be pointer(a) + sizeof(a)
+        pa = pointer(s_aligned.a)
+        pb = pointer(s_aligned.b)
+        @test UInt(pb) == UInt(pa) + sizeof(s_aligned.a)
+        
+        # Check that we didn't align the original
+        # (Originals are usually allocated separately, so unlikely to be contiguous)
+        # @test UInt(pointer(s.b)) != UInt(pointer(s.a)) + sizeof(s.a) 
+    end
+    
+    @testset "alignmem dict" begin
+        d = Dict(:a => rand(10), :b => rand(20))
+        d_aligned = alignmem(d)
+        
+        @test d_aligned[:a] == d[:a]
+        @test d_aligned[:b] == d[:b]
+        
+        # In a dict, order is not guaranteed, but one should follow the other in the block
+        # We can just check that they are close in memory
+        pa = pointer(d_aligned[:a])
+        pb = pointer(d_aligned[:b])
+        diff = abs(Int(pb) - Int(pa))
+        @test diff == sizeof(d_aligned[:a]) || diff == sizeof(d_aligned[:b])
+    end
+
+    @testset "deepalignmem" begin
+        struct DeepS
+            x::S
+            y::Vector{Int}
+        end
+        
+        ds = DeepS(S(rand(5), rand(5)), rand(Int, 5))
+        ds_aligned = deepalignmem(ds)
+        
+        @test ds_aligned.x.a == ds.x.a
+        @test ds_aligned.y == ds.y
+        
+        # Check that x.a, x.b, and y are all in one block
+        p_xa = pointer(ds_aligned.x.a)
+        p_xb = pointer(ds_aligned.x.b)
+        p_y  = pointer(ds_aligned.y)
+        
+        # Assuming field order traversal
+        @test UInt(p_xb) == UInt(p_xa) + sizeof(ds_aligned.x.a)
+        @test UInt(p_y) == UInt(p_xb) + sizeof(ds_aligned.x.b)
+    end
 end

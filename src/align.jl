@@ -7,24 +7,12 @@ computesize( D :: AbstractDict, x ) = haskey( D, x ) ? computesize( D[x] ) : err
 const importantadmonition = """
 !!! warning "important implementation details"
     Users should be mindful of the following important implementation details:
-    - the first array (with offset 0) takes ownership of the `malloc`'d memory (`own=true`)
-    - other arrays point to locations in the same block but do not *own* their location
-    - this arrangement is safe as long as the first array is kept alive
-    - if the first array is resized then bad things can happen if the remaining arrays are accessed
-    - if any of the remaining arrays are resized then that array is no longer contiguous with the remaining arrays, but it will otherwise perform as expected
+    - aligned arrays share a single contiguous memory block
+    - resizing any of the arrays (`push!`, `append!`) will break this contiguity for that array (it will be reallocated elsewhere)
+    - strict contiguity is only guaranteed immediately after alignment
 """
 
 
-mutable struct MemoryBlock
-    ptr::Ptr{Cvoid}
-    function MemoryBlock(sz::Integer)
-        ptr = Base.Libc.malloc( sz )
-        ptr == C_NULL && error( styled"{red:memory allocation failed}" )
-        obj = new( ptr )
-        finalizer( o -> Base.Libc.free( o.ptr ), obj )
-        return obj
-    end
-end
 
 
 
@@ -43,60 +31,37 @@ newarrayofsametype( ::Any, newdata ) = newdata
 
 
 """
-    transferadvance(  D, x, TT, ▶, offset )
+    transferadvance( x, TT, ■, offset )
 
 The function `transferadvance` is *for internal use only*.  It assigns memory from the memory block and then advances the `offset`.
+Returns the new array (or the original if no transfer happened).
 """
-transferadvance!( D :: AbstractDict, x, TT, ▶ :: Ptr, :: Ref{Int} ) = nothing
+transferadvance( x, TT, ■ :: Vector{UInt8}, :: Ref{Int} ) = x
 
 
-function transferadvance!( D :: AbstractDict, x, TT :: Type{𝒯}, ▶ :: Ptr, offset :: Ref{Int} ) where 𝒯 
+function transferadvance( x, TT :: Type{𝒯}, ■ :: Vector{UInt8}, offset :: Ref{Int} ) where 𝒯 
     # this method is where the hard work is done
-    isbitstype( 𝒯 ) || return nothing               # don't do anything for arrays of nonisbits types
-    @assert D[x] isa AbstractArray                  # don't bother with nonarrays
-    length( D[x] ) == 0 && return nothing           # don't try to align arrays of length zero
-    ▶now = ▶ + offset[]                             # set the relevant place in memory
+    isbitstype( 𝒯 ) || return x               # don't do anything for arrays of nonisbits types
+    x isa AbstractArray || return x           # don't bother with nonarrays
+    length( x ) == 0 && return x              # don't try to align arrays of length zero
+    ▶ = pointer(■) + offset[]                 # set the relevant place in memory
     # now grab the memory block that I want, assert ownership if it's the first block, and then give it the correct shape
-    dest = reshape( unsafe_wrap( Array, Ptr{𝒯}( ▶now ), length( D[x] ); own = false ), size( D[x] ) )  
-    offset[] += length( D[x] ) * sizeof( 𝒯 )        # move the offset counter
-    copyto!( dest, D[x] )                           # move the data
-    D[x] = newarrayofsametype( D[x], dest )         # change the dict entry
-    return nothing
+    dest = reshape( unsafe_wrap( Array, Ptr{𝒯}( ▶ ), length( x ); own = false ), size( x ) )  
+    finalizer( _ -> ( ■; nothing ), dest )
+    offset[] += length( x ) * sizeof( 𝒯 )     # move the offset counter
+    copyto!( dest, x )                        # move the data
+    return newarrayofsametype( x, dest )      # return new array
 end
 
 
-function transferadvance!( D :: AbstractDict, x, ▶ :: Ptr, offset :: Ref{Int} )
-    haskey( D, x ) || error( styled"dict {green:$D} lacks key {red:$x}" )
-    D[x] isa AbstractArray || return nothing
-    return transferadvance!( D, x, eltype( D[x] ), ▶, offset )
+function transferadvance( x, ■ :: Vector{UInt8}, offset :: Ref{Int} )
+    x isa AbstractArray || return x
+    return transferadvance( x, eltype( x ), ■, offset )
 end
 
 
-"""
-    alignmem!( D :: AbstractDict, X )
 
-`alignmem!` is *for internal use only*.  It replaces the arrays stored in dictionary `D` at keys `X` with new arrays that are contiguous in memory.  
-
-`alignmem!`
-1. calculates the total size needed for all arrays in `X`;
-2. allocates a single block of memory using `Libc.malloc` to hold all the data;
-3. recursively copies the data from the old arrays into this new contiguous block;
-4. replaces `D[x]` with a new array wrapper (preserving type, keys, offsets, etc.) that points to the new memory
-
-`alignmem!` takes two arguments:
-- `D`: The dictionary containing the arrays;
-- `X`: a collection of keys in `D` identifying which arrays to align
-
-$importantadmonition
-"""
-function alignmem!( D :: AbstractDict, X )
-    block = MemoryBlock( sum( computesize( D, x ) for x ∈ X) )
-    offset = Ref(0)
-    foreach(x -> transferadvance!(D, x, block, offset), X)
-    return nothing
-end
-
-@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):Resizing arrays in structs with aligned memory} will {red:break memory contiguity}: it {italic:can} also be {(fg=0x08FF08,bg=0x000000):unsafe};  (examples are using {(fg=0xfff01f,bg=0x000000):push!} or {(fg=0xfff01f,bg=0x000000):append!}).  Users should use the {magenta:exclude} option for arrays for which resizing is desirable.}" 
+@info styled"{(fg=white,bg=0x000000),bold:{(fg=0x00ffff):Resizing arrays in structs with aligned memory} will {red:break memory contiguity}. Users should use the {magenta:exclude} option for arrays for which resizing is desirable.}"
 
 
 """
@@ -114,10 +79,19 @@ function alignmem( s :: AbstractArray{T}; exclude = Symbol[] ) where T
     isbitstype( T ) && return s                 # don't do anything for objects that are not isbits
     fn = eachindex( s )                         #
     fnalign = filter( k -> k ∉ exclude, fn )    # omit the fields that are to be excluded
-    D = OrderedDict( k => s[k] for k ∈ fn )     # stick everything in an ordered dict
-    alignmem!( D, fnalign )                     # align memory
+    
+    total_size = sum( k -> computesize( s[k] ), fnalign )
+    block = Vector{UInt8}( undef, total_size )
+    offset = Ref(0)
+    
     res = similar( s )
-    foreach( k -> res[k] = D[k], fn )           # transfer memory references
+    for k ∈ fn
+        if k ∈ fnalign
+            res[k] = transferadvance( s[k], block, offset )
+        else
+            res[k] = s[k]
+        end
+    end
     return res
 end
 
@@ -129,39 +103,48 @@ function alignmem( s :: T; exclude = Symbol[] ) where T
     end
     fn = fieldnames( T )
     fnalign = filter( k -> k ∉ exclude, fn )
-    D = OrderedDict( k => getfield( s, k ) for k ∈ fn )
-    alignmem!( D, fnalign )
-    return T( ( D[k] for k ∈ fn )... )
+    
+    total_size = sum( k -> computesize( getfield( s, k ) ), fnalign )
+    block = Vector{UInt8}( undef, total_size )
+    offset = Ref(0)
+
+    return constructorof(T)( ( k ∈ fnalign ? transferadvance( getfield( s, k ), block, offset ) : getfield( s, k ) for k ∈ fn )... )
 end
 
 
 function alignmem( s :: AbstractDict; exclude = Symbol[] )
     D = copy( s )
     keysalign = filter( k -> k ∉ exclude, keys(D) )
-    alignmem!( D, keysalign )
+    
+    total_size = sum( k -> computesize( D[k] ), keysalign )
+    block = Vector{UInt8}( undef, total_size )
+    offset = Ref(0)
+    
+    for k ∈ keysalign
+        D[k] = transferadvance( D[k], block, offset )
+    end
     return D
 end
 
 computesizedeep( x :: AbstractArray; exclude = Symbol[] ) = isbitstype( eltype( x ) ) ? sizeof( eltype( x ) ) * length( x ) : sum( computesizedeep, x )
-computesizedeep( x :: T; exclude = Symbol[] ) where T = isbitstype( T ) || !isstructtype( T ) ? return 0 :  sum( k ∈ exclude ? 0 : computesizedeep( getfield( x, k ) ) for k ∈ fieldnames( T ) )
+computesizedeep( x :: T; exclude = Symbol[] ) where T = isbitstype( T ) || !isstructtype( T ) ?  0 :  sum( k ∈ exclude ? 0 : computesizedeep( getfield( x, k ) ) for k ∈ fieldnames( T ) )
 
 
-function deeptransfer( x :: AbstractArray{T}, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool}; exclude = Symbol[] ) where T
-    isbitstype( T ) || return map( el -> deeptransfer( el, ▶, offset, owned ), x )
+function deeptransfer( x :: AbstractArray{T}, ■ :: Vector{UInt8}, offset :: Ref{Int}; exclude = Symbol[] ) where T
+    isbitstype( T ) || return map( el -> deeptransfer( el, ■, offset ), x )
     sz = sizeof( T ) * length( x )
     sz == 0 && return x
-    ▶now = ▶ + offset[]
-    shouldown = !owned[]
-    flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = shouldown )
-    shouldown && ( owned[] = true )
+    ▶now = pointer(■) + offset[]
+    flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = false )
+    finalizer(_ -> (■; nothing), flat)
     dest = reshape( flat, size( x ) )
     offset[] += sz
     copyto!( dest, x )
     return newarrayofsametype( x, dest )
 end
 
-deeptransfer( x :: T, ▶ :: Ptr, offset :: Ref{Int}, owned :: Ref{Bool}; exclude = Symbol[] ) where T =
-    isbitstype( T ) || !isstructtype( T ) ? x : T( ( k ∈ exclude ? deepcopy( getfield( x, k ) ) : deeptransfer( getfield( x, k ), ▶, offset, owned ) for k ∈ fieldnames( T ) )... ) 
+deeptransfer( x :: T, block :: Vector{UInt8}, offset :: Ref{Int}; exclude = Symbol[] ) where T =
+    isbitstype( T ) || !isstructtype( T ) ? x : constructorof(T)( ( k ∈ exclude ? deepcopy( getfield( x, k ) ) : deeptransfer( getfield( x, k ), block, offset ) for k ∈ fieldnames( T ) )... ) 
 
 """
     deepalignmem( x; exclude = Symbol[] ) 
@@ -177,10 +160,9 @@ $importantadmonition
 function deepalignmem( x; exclude = Symbol[] )
     sz = computesizedeep( x; exclude = exclude )
     sz == 0 && return deepcopy( x )
-    ▶ = Base.Libc.malloc( sz )
+    block = Vector{UInt8}( undef, sz )
     offset = Ref( 0 )
-    owned = Ref( false )
-    return deeptransfer( x, ▶, offset, owned; exclude = exclude )
+    return deeptransfer( x, block, offset; exclude = exclude )
 end
 
 
