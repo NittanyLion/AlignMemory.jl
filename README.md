@@ -14,7 +14,7 @@
 
 ## 🚀 The Problem vs. The Solution
 
-Standard collections in Julia (`Dict`s, `Array`s of `Array`s, `struct`s) often scatter data across memory, causing frequent **cache misses**. `MemoryLayouts.jl` packs this data into contiguous blocks.
+Standard collections in Julia (`Dicts`, `Arrays` of `Arrays`, `structs`) often scatter data across memory, causing frequent **cache misses**. `MemoryLayouts.jl` packs this data into contiguous blocks.
 
 The advantage of contiguity is that it reduces cache misses and should be expected to improve performance.
 
