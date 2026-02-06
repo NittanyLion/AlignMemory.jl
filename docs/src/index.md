@@ -32,7 +32,7 @@ The example below demonstrates how to use `layout`.
 ```@example
 using MemoryLayouts, BenchmarkTools, StyledStrings
 
-function original( A = 10_000, L = 100, S = 5000)
+function original( A = 10_000, L = 100, S = 5000 )
     x = Vector{Vector{Float64}}( undef, A )
     s = Vector{Vector{Float64}}( undef, A )
     for i ∈ 1:A
@@ -50,8 +50,8 @@ function computeme( X )
     return Σ
 end
 
-print( styled"{(fg=0xff9999):original}: " ); @btime computeme( X ) setup=(X = original(););
-print( styled"{(fg=0x99ff99):layout}: " ); @btime computeme( X ) setup=(X = layout( original()););
+print( styled"{(fg=0xff9999):original}: " ); @btime computeme( X ) setup=( X = original(); );
+print( styled"{(fg=0x99ff99):layout}: " ); @btime computeme( X ) setup=( X = layout( original() ); );
 ;
 ```
 
@@ -70,14 +70,14 @@ struct 𝒮{X,Y,Z}
 end
 
 
-function original( A = 10_000, L = 100, S = 5000)
+function original( A = 10_000, L = 100, S = 5000 )
     x = Vector{Vector{Float64}}( undef, A )
     s = Vector{Vector{Float64}}( undef, A )
     for i ∈ 1:A
         x[i] = rand( L )
         s[i] = rand( S )
     end
-    return 𝒮( [x[i] for i ∈ 1:div( A, 3 )], [ x[i] for i ∈ div( A, 3 )+1:div( 2*A, 3 )], [x[i] for i ∈ div( 2*A, 3 )+1:A ] )
+    return 𝒮( [ x[i] for i ∈ 1:div( A, 3 ) ], [ x[i] for i ∈ div( A, 3 )+1:div( 2*A, 3 ) ], [ x[i] for i ∈ div( 2*A, 3 )+1:A ] )
 end
 
 function computeme( X )
@@ -98,9 +98,9 @@ println( layoutstats( original() ) )
 println( deeplayoutstats( original() ) )
 
 
-print( styled"{(fg=0xff9999):original}: " ); @btime computeme( X ) setup=(X = original(););
-print( styled"{(fg=0x99ff99):layout}: " ); @btime computeme( X ) setup=(X = layout( original()););
-print( styled"{(fg=0x9999ff):deeplayout}: " ); @btime computeme( X ) setup=(X = deeplayout( original()););
+print( styled"{(fg=0xff9999):original}: " ); @btime computeme( X ) setup=( X = original(); );
+print( styled"{(fg=0x99ff99):layout}: " ); @btime computeme( X ) setup=( X = layout( original() ); );
+print( styled"{(fg=0x9999ff):deeplayout}: " ); @btime computeme( X ) setup=( X = deeplayout( original() ); );
 ;
 ```
 
@@ -111,9 +111,9 @@ You can inspect the potential improvements in memory contiguity without performi
 ```julia
 julia> using MemoryLayouts
 
-julia> data = [rand(10) for _ in 1:5];
+julia> data = [ rand( 10 ) for _ in 1:5 ];
 
-julia> layoutstats(data)
+julia> layoutstats( data )
 LayoutStats(packed=400 b, blocks=5, span=2 kb, reduction=2 kb (82.6%))
   Level 1: bytes=400 b, blocks=5, span=2 kb, reduction=2 kb (82.6%)
 ```
@@ -162,6 +162,19 @@ aligneddata = layout( data; alignment = 64 )
 
 pointer( aligneddata.a ) # Will be a multiple of 64
 pointer( aligneddata.b ) # Will be a multiple of 64
+```
+
+## 🏎️ Performance Mode (Live Dangerously)
+
+By default, `MemoryLayouts` performs checks to ensure robustness:
+1.  **Cycle Detection**: Prevents `StackOverflowError` if your data structure has cycles (e.g. A -> B -> A).
+2.  **Aliasing Warnings**: Warns if multiple fields point to the same array (which `MemoryLayouts` will duplicate, breaking the shared reference).
+
+If you are confident your data is acyclic and you don't care about shared references (or know you don't have them), you can disable these checks for a small performance boost by setting `livedangerously = true`.
+
+```julia
+# Faster, but crashes on cycles!
+fast_result = deeplayout( huge_tree; livedangerously = true )
 ```
 
 ## ⚠️ Things to be mindful of
