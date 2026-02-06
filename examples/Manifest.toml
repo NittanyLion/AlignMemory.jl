@@ -2,7 +2,7 @@
 
 julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "cc07e09a27896a6ee25aa2fab4f9a34b376a21b6"
+project_hash = "3950290321316e81cd0e714f52d2f4cbbe01713e"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -86,6 +86,12 @@ deps = ["Static"]
 git-tree-sha1 = "f21cfd4950cb9f0587d5067e69405ad2acd27b87"
 uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
 version = "0.1.6"
+
+[[deps.BorrowChecker]]
+deps = ["DispatchDoctor", "MacroTools", "Preferences", "Random"]
+git-tree-sha1 = "4884ba986f58d3ec7ce3f53634fa6d0b20cda9c2"
+uuid = "7bdcaa52-c310-4bb0-bf54-d941056ed284"
+version = "0.4.4"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -230,6 +236,20 @@ deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
+
+[[deps.DispatchDoctor]]
+deps = ["MacroTools", "Preferences"]
+git-tree-sha1 = "42cd00edaac86f941815fe557c1d01e11913e07c"
+uuid = "8d63f2c5-f18a-4cf2-ba9d-b3f60fc568c8"
+version = "0.4.28"
+
+    [deps.DispatchDoctor.extensions]
+    DispatchDoctorChainRulesCoreExt = "ChainRulesCore"
+    DispatchDoctorEnzymeCoreExt = "EnzymeCore"
+
+    [deps.DispatchDoctor.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 
 [[deps.DocStringExtensions]]
 git-tree-sha1 = "7442a5dfe1ebb773c29cc2962a8980f47221d76c"
@@ -625,9 +645,9 @@ version = "0.3.3"
 
 [[deps.MemoryLayouts]]
 deps = ["ConstructionBase", "DataStructures", "StyledStrings"]
-path = ".."
+path = "/home/joris/.julia/dev/MemoryLayouts.jl/examples/.."
 uuid = "109d70c3-7bcd-434b-a7d9-3642108a1280"
-version = "1.0.0-DEV"
+version = "0.1.1-DEV"
 
     [deps.MemoryLayouts.extensions]
     MemoryLayoutsAxisKeysExt = "AxisKeys"

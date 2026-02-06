@@ -1,5 +1,6 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+BorrowChecker = "7bdcaa52-c310-4bb0-bf54-d941056ed284"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 MemoryLayouts = "109d70c3-7bcd-434b-a7d9-3642108a1280"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
