@@ -1,5 +1,10 @@
 using MemoryLayouts
 using Test
+using Aqua
+
+@testset "Aqua" begin
+    Aqua.test_all(MemoryLayouts)
+end
 
 struct S
     a::Vector{Float64}
