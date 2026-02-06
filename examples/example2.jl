@@ -1,3 +1,12 @@
+# Example 2: Complex Struct Layouts
+#
+# This example demonstrates how MemoryLayouts handles custom structs
+# and nested data structures using `deeplayout`.
+#
+# Struct `𝒮` contains three vectors. `deeplayout` ensures that not only
+# the outer structure but also the inner vectors are stored contiguously.
+# This allows for efficient access to deeply nested data.
+
 using MemoryLayouts, BenchmarkTools, StyledStrings
 
 struct 𝒮{X, Y, Z}

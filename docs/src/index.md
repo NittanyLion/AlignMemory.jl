@@ -206,6 +206,14 @@ fast_result = deeplayout( huge_tree; livedangerously = true )
         * it warns for aliasing
         * alignment used is the maximum of user-specified alignment and machine-required alignment for the type
 
+## 🔇 Suppressing the Banner
+
+You can suppress the startup banner by setting the environment variable `MEMORYLAYOUTS` to `"false"` or `"no"`.
+
+```bash
+export MEMORYLAYOUTS="false"
+```
+
 ## 📖 Function documentation
 
 ```@docs

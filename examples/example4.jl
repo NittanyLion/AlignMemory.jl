@@ -1,9 +1,13 @@
-using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization
-
 # Example 4: Object Layout vs. Aligned Memory
+#
 # This example compares the performance of processing "standard" Julia objects (mutable structs)
-# which are heap-allocated and often misaligned (as shown in the conversation earlier)
-# versus densely packed, aligned arrays (Structure of Arrays).
+# which are heap-allocated and often misaligned versus densely packed, aligned arrays (Structure of Arrays).
+#
+# It contrasts:
+# 1. Array of Structures (AoS) / Heap Objects: Pointer chasing, cache misses.
+# 2. Structure of Arrays (SoA) / Aligned Layout: Contiguous, SIMD-friendly.
+
+using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization
 
 # ------------------------------------------------------------------
 # 1. The "Misaligned Object" Approach (AoS / Heap Objects)

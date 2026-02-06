@@ -8,6 +8,8 @@ include( "layout.jl" )
 include( "stats.jl" )
 
 function __init__()
+    get( ENV, "MEMORYLAYOUTS", "" ) ∈ ( "false", "no" ) && return
+
     width = 80
     stars_h = "*"^width
     

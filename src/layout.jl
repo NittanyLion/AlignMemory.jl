@@ -3,31 +3,20 @@
 alignup( x, a ) = cld( x, a ) * a
 
 # Helpers for cycle detection
-function check_cycle(x, stack)
-    if ismutable(x)
-        if any(y -> y === x, stack)
-            throw(ArgumentError("Cyclic dependency detected: $(typeof(x))"))
-        end
-        push!(stack, x)
-        return true
-    end
-    return false
+function checkcycle( x, stack )
+    ismutable( x ) || return false
+    any( y -> y ≡ x, stack ) && throw( ArgumentError( "Cyclic dependency detected: $(typeof( x ))" ) )
+    push!( stack, x )
+    return true
 end
 
-function pop_cycle(x, stack, pushed)
-    if pushed
-        pop!(stack)
-    end
-end
+popcycle( x, stack, pushed ) = pushed ? pop!(stack) : nothing
 
-function check_aliasing_warn(x, visited)
-    if !isbitstype(typeof(x)) && x !== nothing
-        if x in visited
-             @warn styled"Shared reference detected for object of type {yellow:$(typeof(x))}. Object will be {red:duplicated} in the new layout." maxlog=3
-        else
-            push!(visited, x)
-        end
-    end
+function checkaliasingwarn( x, visited )
+    ( isbitstype( typeof( x ) ) || isnothing( x ) ) && return nothing
+    x ∈ visited && @warn styled"Shared reference detected for object of type {yellow:$(typeof(x))}. Object will be {red:duplicated} in the new layout." maxlog=3 
+    push!( visited, x )
+    return nothing
 end
 
 
@@ -40,7 +29,8 @@ const importantadmonition = """
     Users should be mindful of the following important implementation details:
     - aligned arrays share a single contiguous memory block
     - resizing any of the arrays (`push!`, `append!`) will break this contiguity for that array (it will be reallocated elsewhere)
-    - Contiguity is maintained until an array is resized or reassigned
+    - contiguity is maintained until an array is resized or reassigned
+    - please read the documentation
 """
 
 
@@ -76,16 +66,16 @@ function transferadvance( x, TT :: Type{𝒯}, ■ :: Vector{UInt8}, offset :: R
     x isa AbstractArray || return x           # don't bother with nonarrays
     length( x ) == 0 && return x              # don't try to align arrays of length zero
 
-    !livedangerously && check_aliasing_warn(x, visited)
+    !livedangerously && checkaliasingwarn(x, visited)
 
     # Align the offset to the element type requirement
     # We must ensure that (pointer(■) + offset[]) % sizeof(𝒯) == 0
-    current_addr = UInt(pointer(■)) + UInt(offset[])
-    pad = (sizeof(𝒯) - (current_addr % sizeof(𝒯))) % sizeof(𝒯)
+    currentaddr = UInt(pointer(■)) + UInt(offset[])
+    pad = (sizeof(𝒯) - (currentaddr % sizeof(𝒯))) % sizeof(𝒯)
     offset[] += pad
 
     ▶ = pointer( ■ ) + offset[]               # set the relevant place in memory
-    @debug styled"""moving {yellow:$(div(length( x ) * sizeof( 𝒯 ), 1024))kb} from {magenta:$(pointer(x))} to {green:$▶}"""
+    @debug styled"""moving {yellow:$( div( length( x ) * sizeof( 𝒯 ), 1024 ) )kb} from {magenta:$(pointer( x ))} to {green:$▶}"""
     dest = reshape( unsafe_wrap( Array, Ptr{𝒯}( ▶ ), length( x ); own = false ), size( x ) )  
     finalizer( _ -> ( ■; nothing ), dest )
     offset[] += alignup( length( x ) * sizeof( 𝒯 ), alignment )        # move the offset counter
@@ -187,30 +177,30 @@ layout( s :: AbstractDict; exclude = Symbol[], alignment :: Int = 1, livedangero
 
 
 computesizedeep( x :: AbstractArray; stack = Vector{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false ) = isbitstype( eltype( x ) ) ? alignup( sizeof( eltype( x ) ) * length( x ), alignment ) + sizeof(eltype(x)) : begin
-    pushed = !livedangerously && check_cycle(x, stack)
+    pushed = !livedangerously && checkcycle(x, stack)
     try
         sum( el -> computesizedeep( el; stack = stack, exclude = exclude, alignment = alignment, livedangerously = livedangerously ), x; init=0 )
     finally
-        pop_cycle(x, stack, pushed)
+        popcycle(x, stack, pushed)
     end
 end
 
 function computesizedeep( x :: AbstractDict; stack = Vector{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false )
-    pushed = !livedangerously && check_cycle(x, stack)
+    pushed = !livedangerously && checkcycle(x, stack)
     try
         sum( k ∈ exclude ? 0 : computesizedeep( x[k]; stack = stack, exclude = exclude, alignment = alignment, livedangerously = livedangerously ) for k ∈ keys(x); init=0 )
     finally
-        pop_cycle(x, stack, pushed)
+        popcycle( x, stack, pushed )
     end
 end
 
 function computesizedeep( x :: T; stack = Vector{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false ) where T 
     isbitstype( T ) || !isstructtype( T ) ?  0 : begin
-        pushed = !livedangerously && check_cycle(x, stack)
+        pushed = !livedangerously && checkcycle( x, stack )
         try
             sum( k ∈ exclude ? 0 : computesizedeep( getfield( x, k ); stack = stack, exclude = exclude, alignment = alignment, livedangerously = livedangerously ) for k ∈ fieldnames( T ); init=0 )
         finally
-            pop_cycle(x, stack, pushed)
+            popcycle(x, stack, pushed)
         end
     end
 end
@@ -218,25 +208,23 @@ end
 
 function deeptransfer( x :: AbstractArray{T}, ■ :: Vector{UInt8}, offset :: Ref{Int}; stack = Vector{Any}(), visited = IdSet{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false ) where T
     if !isbitstype(T)
-        pushed = !livedangerously && check_cycle(x, stack)
-        !livedangerously && check_aliasing_warn(x, visited)
+        pushed = !livedangerously && checkcycle(x, stack)
+        !livedangerously && checkaliasingwarn(x, visited)
         try
             return map( el -> deeptransfer( el, ■, offset; stack = stack, visited = visited, exclude = exclude, alignment = alignment, livedangerously = livedangerously ), x )
         finally
-            pop_cycle(x, stack, pushed)
+            popcycle( x, stack, pushed )
         end
     end
     sz = sizeof( T ) * length( x )
     sz == 0 && return x
-
     # Align the offset to the element type requirement
-    current_addr = UInt(pointer(■)) + offset[]
-    pad = (sizeof(T) - (current_addr % sizeof(T))) % sizeof(T)
+    currentaddr = UInt( pointer( ■ ) ) + offset[]
+    pad = ( sizeof(T) - ( currentaddr % sizeof( T ) ) ) % sizeof( T )
     offset[] += pad
-
     ▶now = pointer( ■ ) + offset[]
     flat = unsafe_wrap( Array, Ptr{T}( ▶now ), length( x ); own = false )
-    finalizer(_ -> ( ■; nothing ), flat)
+    finalizer( _ -> ( ■; nothing ), flat )
     dest = reshape( flat, size( x ) )
     offset[] += alignup( sz, alignment )
     copyto!( dest, x )
@@ -244,27 +232,25 @@ function deeptransfer( x :: AbstractArray{T}, ■ :: Vector{UInt8}, offset :: Re
 end
 
 function deeptransfer( x :: AbstractDict, ■ :: Vector{UInt8}, offset :: Ref{Int}; stack = Vector{Any}(), visited = IdSet{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false )
-    pushed = !livedangerously && check_cycle(x, stack)
-    !livedangerously && check_aliasing_warn(x, visited)
+    pushed = livedangerously || checkcycle( x, stack )
+    livedangerously || checkaliasingwarn( x, visited )
     try
         D = copy( x )
         foreach( k -> D[k] = deeptransfer( D[k], ■, offset; stack = stack, visited = visited, exclude = exclude, alignment = alignment, livedangerously = livedangerously ), filter( k -> k ∉ exclude, keys(D) ) )
         return D
     finally
-        pop_cycle(x, stack, pushed)
+        popcycle( x, stack, pushed )
     end
 end
 
 function deeptransfer( x :: T, ■ :: Vector{UInt8}, offset :: Ref{Int}; stack = Vector{Any}(), visited = IdSet{Any}(), exclude = Symbol[], alignment :: Int = 1, livedangerously :: Bool = false ) where T
-    if isbitstype( T ) || !isstructtype( T )
-        return x
-    end
-    pushed = !livedangerously && check_cycle(x, stack)
-    !livedangerously && check_aliasing_warn(x, visited)
+    ( isbitstype( T ) || !isstructtype( T ) ) && return x
+    pushed = !livedangerously && checkcycle( x, stack )
+    !livedangerously && checkaliasingwarn( x, visited )
     try
         return constructorof(T)( ( k ∈ exclude ? deepcopy( getfield( x, k ) ) : deeptransfer( getfield( x, k ), ■, offset; stack = stack, visited = visited, exclude = exclude, alignment = alignment, livedangerously = livedangerously ) for k ∈ fieldnames( T ) )... )
     finally
-        pop_cycle(x, stack, pushed)
+        popcycle( x, stack, pushed )
     end
 end
 
@@ -278,8 +264,8 @@ Unlike `layout`, which only aligns the immediate fields/elements of `x`, `deepla
 The `alignment` keyword argument specifies the memory alignment in bytes. This is particularly useful for SIMD operations, where aligning data to 16, 32, or 64 bytes can improve performance.
 
 The `livedangerously` keyword argument (default `false`) disables safety checks for:
-- Cyclic dependencies (prevents StackOverflow)
-- Shared references / aliasing (prevents silent duplication)
+- cyclic dependencies (prevents StackOverflow)
+- shared references / aliasing (prevents silent duplication)
 Enable this only if you are certain your data is acyclic and you accept duplication of shared arrays.
 
 Excluded items are preserved as-is (or deep-copied in some contexts) but not packed into the contiguous memory block.

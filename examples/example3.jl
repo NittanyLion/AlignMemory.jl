@@ -1,8 +1,14 @@
-using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization
+# Example 3: SIMD Realignment Benefits
+#
+# This example demonstrates how realignment helps when working with multiple arrays that
+# need to be processed together in SIMD operations.
+#
+# It compares:
+# 1. Misaligned arrays (scalar vs SIMD)
+# 2. Naturally aligned arrays (scalar vs SIMD)
+# 3. MemoryLayouts aligned arrays (16, 32, and 64-byte alignment)
 
-# Example demonstrating SIMD realignment benefits for strided memory access patterns
-# This example shows how realignment helps when working with multiple arrays that
-# need to be processed together in SIMD operations
+using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization
 
 struct StridedComputation
     a::Vector{Float64}

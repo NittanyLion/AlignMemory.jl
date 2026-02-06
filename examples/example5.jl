@@ -1,6 +1,14 @@
-using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization, Random, Plots
-
 # Example 5: Misalignment Penalties and Alignment Fixes
+#
+# This example benchmarks the specific penalty of misalignment and the speedup from proper alignment.
+# It generates a histogram plot comparing standard allocation vs layout-optimized allocation.
+#
+# Scenarios:
+# 1. Standard: Baseline allocation.
+# 2. Layout (1-byte): Contiguous packing without padding.
+# 3. Layout (64-byte): Contiguous packing with padding for AVX-512 alignment.
+
+using MemoryLayouts, BenchmarkTools, StyledStrings, LoopVectorization, Random, Plots
 
 struct ArrayContainer
     a::Vector{Float64}

@@ -35,13 +35,13 @@ function Base.show( io :: IO, ls :: LayoutStats )
     span = ( s.maxaddr > s.minaddr ) ? Int( s.maxaddr - s.minaddr ) : 0
     reduction = span - s.bytes
     reductionpct = span > 0 ? round( 100 * reduction / span; digits = 1 ) : 0.0
-    print( io, "LayoutStats(packed=$(prsz(s.bytes)), blocks=$(s.blocks), span=$(prsz(span)), reduction=$(prsz(reduction)) ($reductionpct%))" )
+    print( io, "LayoutStats( packed=$( prsz( s.bytes ) ), blocks=$( s.blocks ), span=$( prsz( span ) ), reduction=$( prsz( reduction ) ) ($reductionpct%) )" )
     for level ∈ sort( collect( keys( ls.levels ) ) )
         ℓ = ls.levels[level]
         ℓspan = ( ℓ.maxaddr > ℓ.minaddr ) ? Int( ℓ.maxaddr - ℓ.minaddr ) : 0
         ℓreduction = ℓspan - ℓ.bytes
         ℓreductionpct = ℓspan > 0 ? round( 100 * ℓreduction / ℓspan; digits = 1 ) : 0.0
-        print( io, "\n  Level $level: bytes=$(prsz(ℓ.bytes)), blocks=$(ℓ.blocks), span=$(prsz(ℓspan)), reduction=$(prsz(ℓreduction)) ($ℓreductionpct%)" )
+        print( io, "\n  Level $level: bytes=$( prsz( ℓ.bytes ) ), blocks=$( ℓ.blocks ), span=$( prsz( ℓspan ) ), reduction=$( prsz( ℓreduction ) ) ($ℓreductionpct%)" )
     end
 end
 
