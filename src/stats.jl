@@ -79,10 +79,7 @@ function layoutstats( s :: T; exclude = Symbol[], alignment :: Int = 1 ) where T
     return mapreduce( k -> computestats( getfield( s, k ); alignment = alignment ), +, fnalign; init = zero( LayoutStats ) )
 end
 
-function layoutstats( s :: AbstractDict; exclude = Symbol[], alignment :: Int = 1 )
-    keysalign = filter( k -> k ∉ exclude, keys( s ) )
-    return mapreduce( k -> computestats( s[k]; alignment = alignment ), +, keysalign; init = zero( LayoutStats ) )
-end
+layoutstats( s :: AbstractDict; exclude = Symbol[], alignment :: Int = 1 ) = mapreduce( k -> computestats( s[k]; alignment = alignment ), +, filter( k -> k ∉ exclude, keys( s ) ); init = zero( LayoutStats ) )
 
 function computestatsdeep( x :: AbstractArray; exclude = Symbol[], alignment :: Int = 1, level :: Int = 0 )
     if isbitstype( eltype( x ) ) && length( x ) > 0
