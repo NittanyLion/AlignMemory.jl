@@ -86,16 +86,7 @@ function layout( s :: AbstractArray{T}; exclude = Symbol[], alignment :: Int = 1
     ▶aligned = reinterpret( Ptr{Cvoid}, alignup( UInt( ▶raw ), alignment ) )
     startoffset = Int( ▶aligned - ▶raw )
     offset = Ref( startoffset )
-    
-    res = similar( s )
-    for k ∈ fn
-        if k ∈ fnalign
-            res[k] = transferadvance( s[k], ■, offset, alignment )
-        else
-            res[k] = s[k]
-        end
-    end
-    return res
+    return map!( k -> k ∈ fnalign ? transferadvance( s[k], ■, offset, alignment ) : s[k], similar( s ), fn )
 end
 
 function layout( s :: T; exclude = Symbol[], alignment :: Int = 1 ) where T
@@ -116,20 +107,19 @@ function layout( s :: T; exclude = Symbol[], alignment :: Int = 1 ) where T
 end
 
 
-function layout( s :: AbstractDict; exclude = Symbol[], alignment::Int=1 )
-    D = copy( s )
-    keysalign = filter( k -> k ∉ exclude, keys(D) )
-    totalsize = sum( k -> computesize( D[k]; alignment=alignment ), keysalign )
+function layout!( s :: AbstractDict; exclude = Symbol[], alignment::Int=1 )
+    keysalign = filter( k -> k ∉ exclude, keys(s) )
+    totalsize = sum( k -> computesize( s[k]; alignment=alignment ), keysalign )
     ■ = Vector{UInt8}( undef, totalsize + alignment )
     ▶raw = pointer( ■ )
     ▶aligned = reinterpret( Ptr{Cvoid}, alignup( UInt( ▶raw ), alignment ) )
     startoffset = Int( ▶aligned - ▶raw )
     offset = Ref( startoffset )
-    for k ∈ keysalign
-        D[k] = transferadvance( D[k], ■, offset, alignment )
-    end
-    return D
+    foreach( k -> s[k] = transferadvance( s[k], ■, offset, alignment ), keysalign )
+    return s
 end
+
+layout( s :: AbstractDict; exclude = Symbol[], alignment::Int=1 ) = layout!( copy( s ); exclude = exclude, alignment = alignment )
 
 
 
@@ -153,10 +143,7 @@ end
 
 function deeptransfer( x :: AbstractDict, ■ :: Vector{UInt8}, offset :: Ref{Int}; exclude = Symbol[], alignment :: Int = 1 )
     D = copy( x )
-    keysalign = filter( k -> k ∉ exclude, keys(D) )
-    for k ∈ keysalign
-        D[k] = deeptransfer( D[k], ■, offset; exclude=exclude, alignment=alignment )
-    end
+    foreach( k -> D[k] = deeptransfer( D[k], ■, offset; exclude=exclude, alignment=alignment ), filter( k -> k ∉ exclude, keys(D) ) )
     return D
 end
 

@@ -2,7 +2,7 @@ module MemoryLayouts
 using DataStructures, StyledStrings
 using ConstructionBase
 
-export layout, deeplayout, layoutstats, deeplayoutstats
+export layout, deeplayout, layoutstats, deeplayoutstats, layout!
 
 include( "layout.jl" )
 include( "stats.jl" )

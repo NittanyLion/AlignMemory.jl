@@ -10,7 +10,7 @@ makedocs(;
     format=Documenter.HTML(;
         canonical="https://NittanyLion.github.io/MemoryLayouts.jl",
         edit_link="main",
-        assets=String[],
+        assets=["assets/custom.css", "assets/force_dark.js"],
     ),
     pages=[
         "Home" => "index.md",
